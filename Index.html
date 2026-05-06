@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Negación en Francés - Pizarra Pro</title>
+  <style>
+    :root {
+      --bg: #0b1320;
+      --panel: rgba(15, 23, 42, 0.94);
+      --accent: #f5c518;
+      --accent-2: #ff7a18;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, rgba(255, 215, 0, 0.12), transparent 35%), linear-gradient(180deg, #0b1320 0%, #0f172a 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: min(1400px, 100%);
+      min-height: 840px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(11, 19, 32, 0.95), rgba(15, 23, 42, 0.98));
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    .grid { display: grid; grid-template-columns: 1fr 320px; height: 100%; min-height: 840px; }
+
+    .screen { padding: 48px 56px; display: grid; gap: 36px; align-items: start; }
+
+    h1 { font-size: clamp(3rem, 5vw, 4.8rem); text-align: center; color: var(--accent); text-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); margin: 0; }
+    h2 { font-size: 2rem; color: var(--accent); text-align: center; margin: 0; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 38px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      align-items: center;
+    }
+
+    /* Estilo Pizarra */
+    .phrase-card {
+      display: grid;
+      gap: 26px;
+      padding: 44px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      min-height: 450px;
+      align-items: center;
+    }
+
+    .phrase-main {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      text-align: center;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .missing-part {
+      color: var(--accent-2);
+      background: rgba(255, 122, 24, 0.1);
+      padding: 0 20px;
+      margin: 0 10px;
+      border-radius: 8px;
+      border-bottom: 4px dashed var(--accent-2);
+      transition: all 0.4s ease;
+    }
+
+    .missing-part.revealed {
+      color: var(--success);
+      border-bottom: 4px solid var(--success);
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    /* Controles */
+    .buttons-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; }
+    
+    .button {
+      padding: 20px;
+      border: none;
+      border-radius: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: transform 0.2s;
+    }
+
+    .button:hover:not(:disabled) { transform: translateY(-3px); }
+    .button:disabled { opacity: 0.3; cursor: default; }
+
+    .btn-reveal { grid-column: span 3; background: linear-gradient(135deg, #4f46e5, #22d3ee); color: white; font-size: 1.4rem; }
+    .btn-correct { background: var(--success); color: white; }
+    .btn-incorrect { background: var(--danger); color: white; }
+    .btn-next { background: var(--accent); color: #000; }
+
+    /* Barra Lateral */
+    .sidebar { padding: 42px 28px; border-left: 2px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.2); }
+    .leaderboard-item {
+      display: flex; justify-content: space-between; padding: 18px; 
+      border-radius: 14px; background: rgba(255,255,255,0.05); margin-bottom: 12px;
+    }
+
+    .player-tag {
+      background: rgba(245, 197, 24, 0.1); border: 2px solid var(--accent);
+      padding: 15px 30px; border-radius: 50px; color: var(--accent); font-weight: 800; margin-bottom: 20px;
+    }
+
+    /* Pantallas Finales y Config */
+    .field { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; }
+    input { padding: 15px; border-radius: 12px; border: none; background: rgba(255,255,255,0.1); color: white; text-align: center; }
+
+    .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 100%; margin-top: 20px; }
+    .podium-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; text-align: center; }
+    
+    .confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 100; }
+    .confetti-piece { position: absolute; width: 10px; height: 10px; animation: fall 3s linear infinite; }
+    @keyframes fall { 0% { transform: translateY(-50px) rotate(0deg); } 100% { transform: translateY(900px) rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="grid">
+    <section class="screen">
+      
+      <!-- CONFIGURACIÓN -->
+      <div id="startScreen" class="card">
+        <h1>La Négation</h1>
+        <p>Configura los nombres de los estudiantes</p>
+        <div class="field">
+          <label>Nombres (separados por comas)</label>
+          <input type="text" id="playerNames" value="Alumno 1, Alumno 2">
+        </div>
+        <button class="button btn-next" onclick="initGame()" style="width: 300px">Iniciar Juego</button>
+      </div>
+
+      <!-- JUEGO -->
+      <div id="gameScreen" class="card" style="display: none; width: 100%;">
+        <div id="currentTurnTag" class="player-tag">TURNO DE: ---</div>
+        
+        <div class="phrase-card">
+          <div id="phraseContainer" class="phrase-main">
+            <!-- Dinámico -->
+          </div>
+          <div id="translationText" style="text-align: center; color: var(--text-muted); font-size: 1.8rem; font-style: italic; margin-top: 20px;"></div>
+        </div>
+
+        <div class="buttons-grid">
+          <button id="revealBtn" class="button btn-reveal" onclick="revealSolution()">👁️ Revelar Solución</button>
+          <button id="correctBtn" class="button btn-correct" onclick="handleScore(10)" disabled>¡CORRECTO! 👍</button>
+          <button id="incorrectBtn" class="button btn-incorrect" onclick="handleScore(0)" disabled>INCORRECTO 👎</button>
+          <button id="nextBtn" class="button btn-next" onclick="nextTurn()" style="display: none; grid-column: span 3;">Siguiente Frase ➡️</button>
+        </div>
+      </div>
+
+      <!-- FINAL -->
+      <div id="endScreen" class="card" style="display: none;">
+        <h1>Fin del Juego</h1>
+        <div class="podium" id="podium"></div>
+        <button class="button btn-next" onclick="location.reload()" style="margin-top: 30px">Reiniciar Juego</button>
+        <div id="confetti" class="confetti"></div>
+      </div>
+
+    </section>
+
+    <!-- SIDEBAR PUNTOS -->
+    <aside class="sidebar">
+      <h2>Puntos</h2>
+      <div id="leaderboard"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  const database = [
+    { p1: "Je", n1: "ne", p2: "sais", n2: "pas", p3: ".", t: "No lo sé" },
+    { p1: "Il", n1: "ne", p2: "mange", n2: "pas", p3: "de carne.", t: "Él no come carne" },
+    { p1: "Nous", n1: "ne", p2: "voulons", n2: "pas", p3: "dormir.", t: "Nosotros no queremos dormir" },
+    { p1: "Ce", n1: "n'", p2: "est", n2: "pas", p3: "grave.", t: "No es grave" },
+    { p1: "Tu", n1: "ne", p2: "parles", n2: "pas", p3: "français.", t: "Tú no hablas francés" },
+    { p1: "Elle", n1: "n'", p2: "aime", n2: "pas", p3: "le café.", t: "A ella no le gusta el café" },
+    { p1: "Ustedes", n1: "n'", p2: "avez", n2: "pas", p3: "faim.", t: "Ustedes no tienen hambre" },
+    { p1: "Je", n1: "ne", p2: "comprends", n2: "pas", p3: ".", t: "No entiendo" }
+  ];
+
+  let players = [];
+  let currentPhraseIdx = 0;
+  let playerTurnIdx = 0;
+
+  function initGame() {
+    const names = document.getElementById('playerNames').value.split(',').map(n => n.trim());
+    players = names.map(n => ({ name: n, score: 0 }));
+    document.getElementById('startScreen').style.display = 'none';
+    document.getElementById('gameScreen').style.display = 'flex';
+    updateUI();
+    renderPhrase();
+  }
+
+  function renderPhrase() {
+    const data = database[currentPhraseIdx];
+    const player = players[playerTurnIdx % players.length];
+    
+    document.getElementById('currentTurnTag').innerText = `TURNO DE: ${player.name}`;
+    document.getElementById('phraseContainer').innerHTML = `
+      ${data.p1} <span class="missing-part">____</span> ${data.p2} <span class="missing-part">____</span> ${data.p3}
+    `;
+    document.getElementById('translationText').innerText = "";
+    
+    // Reset botones
+    document.getElementById('revealBtn').style.display = 'block';
+    document.getElementById('nextBtn').style.display = 'none';
+    document.getElementById('correctBtn').disabled = true;
+    document.getElementById('incorrectBtn').disabled = true;
+  }
+
+  function revealSolution() {
+    const data = database[currentPhraseIdx];
+    const gaps = document.querySelectorAll('.missing-part');
+    
+    gaps[0].innerText = data.n1;
+    gaps[0].classList.add('revealed');
+    gaps[1].innerText = data.n2;
+    gaps[1].classList.add('revealed');
+    
+    document.getElementById('translationText').innerText = `(${data.t})`;
+    document.getElementById('revealBtn').style.display = 'none';
+    document.getElementById('correctBtn').disabled = false;
+    document.getElementById('incorrectBtn').disabled = false;
+  }
+
+  function handleScore(pts) {
+    players[playerTurnIdx % players.length].score += pts;
+    updateUI();
+    document.getElementById('correctBtn').disabled = true;
+    document.getElementById('incorrectBtn').disabled = true;
+    document.getElementById('nextBtn').style.display = 'block';
+  }
+
+  function nextTurn() {
+    currentPhraseIdx++;
+    playerTurnIdx++;
+    
+    if (currentPhraseIdx >= database.length) {
+      showEnd();
+    } else {
+      renderPhrase();
+    }
+  }
+
+  function updateUI() {
+    const lb = document.getElementById('leaderboard');
+    lb.innerHTML = players.map(p => `
+      <div class="leaderboard-item">
+        <strong>${p.name}</strong>
+        <span style="color:var(--accent)">${p.score} pts</span>
+      </div>
+    `).join('');
+  }
+
+  function showEnd() {
+    document.getElementById('gameScreen').style.display = 'none';
+    document.getElementById('endScreen').style.display = 'flex';
+    
+    const sorted = [...players].sort((a,b) => b.score - a.score);
+    document.getElementById('podium').innerHTML = sorted.slice(0,3).map((p, i) => `
+      <div class="podium-card">
+        <div style="font-size: 2rem">${i===0?'🥇':i===1?'🥈':'🥉'}</div>
+        <strong>${p.name}</strong><br>
+        <span>${p.score} pts</span>
+      </div>
+    `).join('');
+    
+    launchConfetti();
+  }
+
+  function launchConfetti() {
+    const container = document.getElementById('confetti');
+    const colors = ['#facc15', '#fb7185', '#60a5fa', '#34d399'];
+    for(let i=0; i<50; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+      p.style.animationDelay = Math.random() * 2 + 's';
+      container.appendChild(p);
+    }
+  }
+</script>
+</body>
+</html>
