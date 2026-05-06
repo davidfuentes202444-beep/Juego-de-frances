@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La Négation - Pizarra Interactiva</title>
+  <style>
+    :root {
+      --bg: #0b1320;
+      --panel: rgba(15, 23, 42, 0.94);
+      --accent: #f5c518;
+      --accent-2: #ff7a18;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #22c55e;
+      --danger: #ef4444;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, rgba(255, 215, 0, 0.1), transparent 40%), #0b1320;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: min(1200px, 100%);
+      background: var(--panel);
+      border-radius: 30px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      overflow: hidden;
+    }
+
+    .screen { padding: 40px; }
+    
+    .sidebar {
+      background: rgba(0, 0, 0, 0.2);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 30px;
+    }
+
+    h1 { color: var(--accent); text-align: center; font-size: 2.5rem; }
+
+    /* Estilo del ejercicio central */
+    .exercise-container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 50px;
+      border-radius: 20px;
+      margin: 20px 0;
+    }
+
+    .french-phrase {
+      font-size: 4rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+
+    /* El hueco para la negación */
+    .gap {
+      color: var(--accent-2);
+      border-bottom: 4px dashed var(--accent-2);
+      padding: 0 15px;
+      min-width: 80px;
+      display: inline-block;
+    }
+
+    /* Cuando se revela la respuesta */
+    .revealed {
+      color: var(--success);
+      border-bottom: 4px solid var(--success);
+      text-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+    }
+
+    .translation {
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-top: 10px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      padding: 18px;
+      border: none;
+      border-radius: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+    }
+
+    .btn-reveal { grid-column: span 2; background: var(--accent); color: #000; }
+    .btn-correct { background: var(--success); color: white; }
+    .btn-incorrect { background: var(--danger); color: white; }
+    .btn-next { grid-column: span 2; background: #38bdf8; color: white; }
+
+    .btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    #setup-screen { text-align: center; padding: 40px; }
+    input { padding: 10px; border-radius: 8px; border: none; margin: 10px; width: 80%; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Pantalla Principal de Juego -->
+  <main class="screen">
+    <div id="setup-screen">
+      <h1>Configuración</h1>
+      <p>Nombres de los estudiantes (separados por coma):</p>
+      <input type="text" id="playerNames" value="Estudiante 1, Estudiante 2">
+      <br><br>
+      <button class="btn btn-reveal" onclick="startGame()">¡EMPEZAR CLASE!</button>
+    </div>
+
+    <div id="game-screen" style="display: none;">
+      <h2 id="turn-title" style="color: var(--accent-2); text-align: center;"></h2>
+      
+      <div class="exercise-container">
+        <div id="display-phrase" class="french-phrase"></div>
+        <div id="display-translation" class="translation"></div>
+      </div>
+
+      <div class="controls">
+        <button id="btn-reveal" class="btn btn-reveal" onclick="revealAnswer()">👁️ REVELAR RESPUESTA</button>
+        <button id="btn-correct" class="btn btn-correct" onclick="handleScore(true)" disabled>¡CORRECTO! 👍</button>
+        <button id="btn-incorrect" class="btn btn-incorrect" onclick="handleScore(false)" disabled>INCORRECTO 👎</button>
+        <button id="btn-next" class="btn btn-next" onclick="nextTurn()" style="display: none;">SIGUIENTE FRASE ➡️</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <h3>Puntuación</h3>
+    <div id="leaderboard"></div>
+  </aside>
+</div>
+
+<script>
+  // Frases con estructura: [Parte1, Negacion1, Parte2, Negacion2, Parte3, Traduccion]
+  const phrases = [
+    { p1: "Je ", n1: "ne", p2: " sais ", n2: "pas", p3: ".", t: "No lo sé" },
+    { p1: "Il ", n1: "ne", p2: " mange ", n2: "pas", p3: " de carne.", t: "Él no come carne" },
+    { p1: "Nous ", n1: "ne", p2: " voulons ", n2: "pas", p3: " dormir.", t: "Nosotros no queremos dormir" },
+    { p1: "Ce ", n1: "n'", p2: "est ", n2: "pas", p3: " grave.", t: "No es grave" },
+    { p1: "Tu ", n1: "ne", p2: " parles ", n2: "pas", p3: " français.", t: "Tú no hablas francés" },
+    { p1: "Elle ", n1: "n'", p2: "aime ", n2: "pas", p3: " le café.", t: "A ella no le gusta el café" },
+    { p1: "Je ", n1: "ne", p2: " comprends ", n2: "pas", p3: ".", t: "No entiendo" },
+    { p1: "Il ", n1: "ne", p2: " fait ", n2: "pas", p3: " froid.", t: "No hace frío" }
+  ];
+
+  let players = [];
+  let currentIndex = 0;
+  let playerTurn = 0;
+
+  function startGame() {
+    const names = document.getElementById('playerNames').value.split(',');
+    players = names.map(n => ({ name: n.trim(), score: 0 }));
+    
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'block';
+    
+    updateLeaderboard();
+    renderPhrase();
+  }
+
+  function renderPhrase() {
+    const phrase = phrases[currentIndex];
+    const player = players[playerTurn % players.length];
+    
+    document.getElementById('turn-title').innerText = `Turno de: ${player.name}`;
+    
+    // Mostramos la frase con huecos
+    document.getElementById('display-phrase').innerHTML = `
+      ${phrase.p1}<span class="gap">___</span>${phrase.p2}<span class="gap">___</span>${phrase.p3}
+    `;
+    document.getElementById('display-translation').innerText = "";
+    
+    // Reset botones
+    document.getElementById('btn-reveal').style.display = 'block';
+    document.getElementById('btn-next').style.display = 'none';
+    document.getElementById('btn-correct').disabled = true;
+    document.getElementById('btn-incorrect').disabled = true;
+  }
+
+  function revealAnswer() {
+    const phrase = phrases[currentIndex];
+    
+    // Sustituimos los huecos por la respuesta real
+    document.getElementById('display-phrase').innerHTML = `
+      ${phrase.p1}<span class="gap revealed">${phrase.n1}</span>${phrase.p2}<span class="gap revealed">${phrase.n2}</span>${phrase.p3}
+    `;
+    document.getElementById('display-translation').innerText = `(${phrase.t})`;
+    
+    document.getElementById('btn-reveal').style.display = 'none';
+    document.getElementById('btn-correct').disabled = false;
+    document.getElementById('btn-incorrect').disabled = false;
+  }
+
+  function handleScore(isCorrect) {
+    if (isCorrect) {
+      players[playerTurn % players.length].score += 10;
+    }
+    updateLeaderboard();
+    document.getElementById('btn-correct').disabled = true;
+    document.getElementById('btn-incorrect').disabled = true;
+    document.getElementById('btn-next').style.display = 'block';
+  }
+
+  function nextTurn() {
+    currentIndex = (currentIndex + 1) % phrases.length;
+    playerTurn++;
+    renderPhrase();
+  }
+
+  function updateLeaderboard() {
+    const lb = document.getElementById('leaderboard');
+    lb.innerHTML = players.map(p => `
+      <div class="leaderboard-item">
+        <span>${p.name}</span>
+        <strong>${p.score} pts</strong>
+      </div>
+    `).join('');
+  }
+</script>
+
+</body>
+</html>
