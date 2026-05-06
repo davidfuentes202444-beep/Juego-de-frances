@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Francés - Pizarra Dinámica</title>
+  <style>
+    :root {
+      --bg: #0b1320;
+      --panel: #161e2e;
+      --accent: #f5c518;
+      --accent-2: #ff7a18;
+      --text: #f8fafc;
+      --success: #22c55e;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: var(--text); overflow: hidden; }
+
+    /* Contenedor Principal */
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Pizarra de Clase */
+    .pizarra {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 60px;
+      background: radial-gradient(circle at center, #1e293b 0%, #0b1320 100%);
+      position: relative;
+    }
+
+    /* Pantalla de Inicio (Overlay) */
+    #setup-screen {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    h1 { font-size: 3.5rem; color: var(--accent); margin-bottom: 30px; text-align: center; }
+    input { 
+      width: 450px; padding: 20px; border-radius: 15px; border: 2px solid #334155;
+      background: #1e293b; color: white; font-size: 1.2rem; text-align: center; margin-bottom: 20px;
+    }
+
+    /* Estética de la Frase */
+    .exercise-zone { text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+    
+    .frase-frances {
+      font-size: 5.5rem; /* TAMAÑO GIGANTE */
+      font-weight: 800;
+      margin-bottom: 40px;
+      letter-spacing: 2px;
+    }
+
+    /* Huecos Críticos */
+    .hueco {
+      display: inline-block;
+      min-width: 140px;
+      border-bottom: 6px dashed var(--accent-2);
+      margin: 0 15px;
+      color: transparent; /* Oculto hasta revelar */
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .hueco.visible {
+      color: var(--success);
+      border-bottom: 6px solid var(--success);
+      transform: translateY(-5px);
+    }
+
+    .traduccion {
+      font-size: 2.2rem;
+      color: #94a3b8;
+      font-style: italic;
+      opacity: 0;
+      transition: 0.5s;
+    }
+
+    /* Botonera */
+    .controles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .btn {
+      padding: 24px; border: none; border-radius: 20px; font-size: 1.4rem; font-weight: 800;
+      cursor: pointer; text-transform: uppercase; transition: 0.2s;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn:disabled { opacity: 0.15; cursor: not-allowed; }
+
+    .btn-revelar { grid-column: span 3; background: #4f46e5; color: white; }
+    .btn-si { background: var(--success); color: white; }
+    .btn-no { background: var(--danger); color: white; }
+    .btn-next { background: var(--accent); color: #000; }
+
+    /* Lateral de Puntos */
+    .sidebar {
+      background: var(--panel);
+      border-left: 2px solid rgba(255,255,255,0.05);
+      padding: 30px;
+    }
+
+    .ranking-card {
+      background: rgba(255,255,255,0.03);
+      padding: 15px 20px;
+      border-radius: 15px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      border: 2px solid transparent;
+    }
+    .ranking-card.activo { border-color: var(--accent); background: rgba(245, 197, 24, 0.1); }
+
+    /* Podio Final */
+    #end-screen {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .podium-item { background: #1e293b; padding: 40px; border-radius: 30px; text-align: center; margin: 10px; }
+
+    /* Confeti */
+    .confetti-box { position: absolute; inset: 0; pointer-events: none; }
+    .bit { position: absolute; width: 12px; height: 12px; animation: drop 3s linear infinite; }
+    @keyframes drop { to { transform: translateY(100vh) rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <main class="pizarra">
+    <!-- Pantalla 1: Registro -->
+    <div id="setup-screen">
+      <h1>La Négation Pro 🇫🇷</h1>
+      <input type="text" id="names" placeholder="Nombres: David, Diego, Pedro...">
+      <button class="btn btn-next" style="width: 450px" onclick="start()">Empezar Clase</button>
+    </div>
+
+    <!-- Pantalla 2: Juego -->
+    <div id="status" style="text-align: center; font-size: 1.8rem; font-weight: 900; color: var(--accent);">
+      TURNO: <span id="current-player">---</span>
+    </div>
+
+    <div class="exercise-zone">
+      <div id="frase-box" class="frase-frances"></div>
+      <div id="trad-box" class="traduccion"></div>
+    </div>
+
+    <div class="controles">
+      <button id="btn-rev" class="btn btn-revelar" onclick="reveal()">👁️ REVELAR (Comparar con pizarra)</button>
+      <button id="btn-ok" class="btn btn-si" onclick="addPts(10)" disabled>¡LO HIZO BIEN! 👍</button>
+      <button id="btn-err" class="btn btn-no" onclick="addPts(0)" disabled>MAL / INCORRECTO 👎</button>
+      <button id="btn-nxt" class="btn btn-next" style="display: none; grid-column: span 3;" onclick="next()">Siguiente Estudiante ➡️</button>
+    </div>
+
+    <!-- Pantalla 3: Podio -->
+    <div id="end-screen">
+      <h1>🏆 RESULTADOS FINALES</h1>
+      <div id="winners" style="display: flex;"></div>
+      <button class="btn btn-next" style="margin-top: 40px; width: 300px" onclick="location.reload()">Reiniciar</button>
+      <div id="confetti" class="confetti-box"></div>
+    </div>
+  </main>
+
+  <!-- Sidebar de Puntos -->
+  <aside class="sidebar">
+    <h2 style="text-align: center; color: var(--accent);">Ranking</h2>
+    <div id="scores-list"></div>
+  </aside>
+</div>
+
+<script>
+  // Banco de frases estructurado: p1 + neg1 + p2 + neg2 + p3
+  const frases = [
+    { p1: "Je", n1: "ne", p2: "sais", n2: "pas", p3: ".", t: "No lo sé" },
+    { p1: "Il", n1: "ne", p2: "mange", n2: "pas", p3: "de viande.", t: "Él no come carne" },
+    { p1: "Ce", n1: "n'", p2: "est", n2: "pas", p3: "grave.", t: "No es grave / No importa" },
+    { p1: "Nous", n1: "ne", p2: "voulons", n2: "pas", p3: "sortir.", t: "Nosotros no queremos salir" },
+    { p1: "Elle", n1: "n'", p2: "aime", n2: "pas", p3: "le café.", t: "A ella no le gusta el café" },
+    { p1: "Tu", n1: "ne", p2: "parles", n2: "pas", p3: "français.", t: "Tú no hablas francés" },
+    { p1: "Je", n1: "ne", p2: "comprends", n2: "pas", p3: ".", t: "No entiendo" },
+    { p1: "Ils", n1: "ne", p2: "sont", n2: "pas", p3: "ici.", t: "Ellos no están aquí" }
+  ];
+
+  let alumnos = [];
+  let indexF = 0;
+  let indexP = 0;
+
+  function start() {
+    const raw = document.getElementById('names').value.split(',').map(n => n.trim()).filter(n => n);
+    if(raw.length === 0) return alert("Pon nombres separados por coma");
+    alumnos = raw.map(n => ({ nombre: n, pts: 0 }));
+    document.getElementById('setup-screen').style.display = 'none';
+    load();
+  }
+
+  function load() {
+    const f = frases[indexF];
+    const a = alumnos[indexP % alumnos.length];
+    
+    document.getElementById('current-player').innerText = a.nombre;
+    document.getElementById('frase-box').innerHTML = `${f.p1} <span class="hueco">___</span> ${f.p2} <span class="hueco">___</span> ${f.p3}`;
+    document.getElementById('trad-box').innerText = `"${f.t}"`;
+    document.getElementById('trad-box').style.opacity = "0";
+
+    document.getElementById('btn-rev').style.display = "block";
+    document.getElementById('btn-nxt').style.display = "none";
+    document.getElementById('btn-ok').disabled = true;
+    document.getElementById('btn-err').disabled = true;
+    updateRanking();
+  }
+
+  function reveal() {
+    const f = frases[indexF];
+    const huecos = document.querySelectorAll('.hueco');
+    huecos[0].innerText = f.n1; huecos[0].classList.add('visible');
+    huecos[1].innerText = f.n2; huecos[1].classList.add('visible');
+    document.getElementById('trad-box').style.opacity = "1";
+    
+    document.getElementById('btn-rev').style.display = "none";
+    document.getElementById('btn-ok').disabled = false;
+    document.getElementById('btn-err').disabled = false;
+  }
+
+  function addPts(n) {
+    alumnos[indexP % alumnos.length].pts += n;
+    document.getElementById('btn-ok').disabled = true;
+    document.getElementById('btn-err').disabled = true;
+    document.getElementById('btn-nxt').style.display = "block";
+    updateRanking();
+  }
+
+  function next() {
+    indexF++;
+    indexP++;
+    if(indexF >= frases.length) return finish();
+    load();
+  }
+
+  function updateRanking() {
+    const list = document.getElementById('scores-list');
+    const actual = indexP % alumnos.length;
+    list.innerHTML = alumnos.map((a, i) => `
+      <div class="ranking-card ${i === actual ? 'activo' : ''}">
+        <span>${a.nombre}</span>
+        <strong>${a.pts} pts</strong>
+      </div>
+    `).join('');
+  }
+
+  function finish() {
+    document.getElementById('end-screen').style.display = 'flex';
+    const win = [...alumnos].sort((a,b) => b.pts - a.pts);
+    document.getElementById('winners').innerHTML = win.slice(0,3).map((a,i) => `
+      <div class="podium-item">
+        <div style="font-size: 3rem">${i===0?'🥇':i===1?'🥈':'🥉'}</div>
+        <h2>${a.nombre}</h2>
+        <p>${a.pts} pts</p>
+      </div>
+    `).join('');
+    party();
+  }
+
+  function party() {
+    const c = document.getElementById('confetti');
+    const colors = ['#facc15', '#38bdf8', '#fb7185', '#22c55e'];
+    for(let i=0; i<80; i++) {
+      const b = document.createElement('div');
+      b.className = 'bit';
+      b.style.left = Math.random() * 100 + 'vw';
+      b.style.background = colors[Math.floor(Math.random()*colors.length)];
+      b.style.animationDelay = Math.random() * 2 + 's';
+      c.appendChild(b);
+    }
+  }
+</script>
+
+</body>
+</html>
